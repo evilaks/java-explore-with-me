@@ -1,26 +1,34 @@
 package ru.practicum.controller;
 
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.StatisticsEventDto;
+import ru.practicum.dto.StatisticsReportDto;
+import ru.practicum.service.StatServerService;
 
 import java.util.List;
 
-
+@Slf4j
 @RestController
+@RequiredArgsConstructor
 public class StatServerController {
 
+    private final StatServerService service;
+
     @PostMapping("/hit")
-    public ResponseEntity<Object> saveEvent(@RequestBody StatisticsEventDto statEventDto) {
-        return null;
+    public StatisticsEventDto saveEvent(@RequestBody StatisticsEventDto statEventDto) {
+        log.info("Saving event: {}", statEventDto);
+        return service.save(statEventDto);
     }
 
 
     @GetMapping("/stats")
-    public ResponseEntity<Object> getStatistics(@RequestParam String start,
-                                                @RequestParam String end,
-                                                @RequestParam List<String> uris,
-                                                @RequestParam (defaultValue = "false") Boolean unique) {
-        return null;
+    public List<StatisticsReportDto> getStatistics(@RequestParam (defaultValue = "1900-01-01 00:00:01") String start,
+                                                   @RequestParam (defaultValue = "2099-12-31 23:59:59") String end,
+                                                   @RequestParam (defaultValue = "ALL") List<String> uris,
+                                                   @RequestParam (defaultValue = "false") Boolean unique) {
+        log.info("Getting statistics for period {} - {}, uris: {}, unique: {}", start, end, uris, unique);
+        return service.getStatistics(start, end, uris, unique);
     }
 }
