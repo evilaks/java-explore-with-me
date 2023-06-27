@@ -14,15 +14,11 @@ public class JacksonConfiguration {
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jackson2ObjectMapperBuilderCustomizer() {
-        
         return builder -> {
-            
             // formatter
             DateTimeFormatter dateTimeFormatter =  DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            
             // deserializers
             builder.deserializers(new LocalDateTimeDeserializer(dateTimeFormatter));
-            
             // serializers
             builder.serializers(new LocalDateTimeSerializer(dateTimeFormatter));
         };
