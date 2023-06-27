@@ -1,16 +1,24 @@
 version: '3.1'
 services:
   stat-server:
+    build: stat/stat-server
+    image: stat-server
+    container_name: stat-server
     ports:
       - "9090:9090"
     depends_on:
       - stat-db
+    restart: on-failure
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stat-db:5432/stat-db
+      - SPRING_DATASOURCE_USERNAME=evilaks
+      - SPRING_DATASOURCE_PASSWORD=password
 
   stat-db:
     image: postgres:14-alpine
     volumes:
       - /var/lib/postgresql/data/
-    container_name: db
+    container_name: stat-db
     ports:
       - "6541:5432"
     environment:
@@ -19,6 +27,7 @@ services:
       - POSTGRES_PASSWORD=password
 
   ewm-service:
+    build: ewm-main/ewm-service
     ports:
       - "8080:8080"
 

@@ -11,11 +11,21 @@
 	</parent>
 
 	<name>Explore With Me</name>
+	<groupId>ru.practicum</groupId>
+	<artifactId>explore-with-me</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
 	<modules>
-		<module>stat/stat-server</module>
-		<module>stat/stat-client</module>
-		<module>stat/stat-dto</module>
+		<module>stat</module>
+		<module>ewm-main/ewm-service</module>
 	</modules>
+
+	<properties>
+		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -35,12 +45,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>ru.practicum</groupId>
-            <artifactId>stat-dto</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -50,18 +54,6 @@
 			<artifactId>spring-data-jpa</artifactId>
 		</dependency>
 	</dependencies>
-
-	<groupId>ru.practicum</groupId>
-	<artifactId>explore-with-me</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<packaging>pom</packaging>
-
-	<properties>
-		<java.version>11</java.version>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
-
-
 
 	<build>
 		<pluginManagement>
