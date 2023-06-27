@@ -17,7 +17,7 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>stat</module>
+		<module>stats</module>
 		<module>ewm-main/ewm-service</module>
 	</modules>
 
@@ -40,14 +40,6 @@
 			<artifactId>testng</artifactId>
 			<version>RELEASE</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.data</groupId>
