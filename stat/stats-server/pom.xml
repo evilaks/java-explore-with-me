@@ -11,7 +11,7 @@
 
     </parent>
 
-    <artifactId>stat-server</artifactId>
+    <artifactId>stats-server</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
