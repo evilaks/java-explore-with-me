@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.StatisticsEventDto;
 import ru.practicum.dto.StatisticsReportDto;
-import ru.practicum.service.StatServerService;
+import ru.practicum.service.StatServerServiceImpl;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatServerController {
 
-    private final StatServerService service;
+    private final StatServerServiceImpl service;
 
     @PostMapping("/hit")
     public StatisticsEventDto saveEvent(@RequestBody StatisticsEventDto statEventDto) {
