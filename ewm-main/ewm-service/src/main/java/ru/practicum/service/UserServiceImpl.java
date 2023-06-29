@@ -1,0 +1,70 @@
+package ru.practicum.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import ru.practicum.dto.user.UserDto;
+import ru.practicum.dto.user.UserDtoMapper;
+import ru.practicum.exception.BadRequestException;
+import ru.practicum.repo.UserRepo;
+
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    private final UserRepo userRepo;
+    private final UserDtoMapper userDtoMapper;
+
+    @Override
+    public UserDto add(UserDto user) {
+        validateUser(user);
+        return userDtoMapper.toDto(userRepo.save(userDtoMapper.toEntity(user)));
+    }
+
+    @Override
+    public UserDto get(Long id) {
+        return userDtoMapper.toDto(userRepo.findById(id).orElseThrow());
+    }
+
+    @Override
+    public List<UserDto> getAll() {
+        return userRepo.findAll().stream().map(userDtoMapper::toDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public void delete(Long id) {
+        userRepo.deleteById(id);
+    }
+
+    private void validateUser(UserDto user) {
+        if (user == null)
+            throw new BadRequestException("Invalid user", "User is null");
+
+        if (user.getName() == null || user.getName().isEmpty())
+            throw new BadRequestException("Invalid user", "User name is empty");
+
+        if (user.getName().length() < 2)
+            throw new BadRequestException("Invalid user", "User name is too short");
+
+        if (user.getName().length() > 254)
+            throw new BadRequestException("Invalid user", "User name is too long");
+
+        String nameRegex = "^(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._ ]+(?<![_.])$";
+        Pattern namePattern = Pattern.compile(nameRegex);
+        if (!namePattern.matcher(user.getName()).matches())
+            throw new BadRequestException("Invalid user", "User name is invalid");
+
+        if (user.getEmail() == null || user.getEmail().isEmpty())
+            throw new BadRequestException("Invalid user", "User email is empty");
+
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\." +
+                "[a-zA-Z0-9_+&*-]+)*@" +
+                "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+        Pattern emailPattern = Pattern.compile(emailRegex);
+        if (!emailPattern.matcher(user.getEmail()).matches())
+            throw new BadRequestException("Invalid user", "User email is invalid");
+    }
+}

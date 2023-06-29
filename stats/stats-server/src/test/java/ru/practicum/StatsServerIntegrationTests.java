@@ -40,7 +40,7 @@ public class StatsServerIntegrationTests {
         mockMvc.perform(post("/hit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"app\": \"ewm-test1\", \"ip\": \"3.3.3.3\", \"uri\": \"test/1\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(4));
     }
