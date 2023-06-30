@@ -13,5 +13,5 @@ public interface CategoryService {
 
     CategoryDto findById(Long id);
 
-    List<CategoryDto> findAll();
+    List<CategoryDto> findAll(Integer from, Integer size);
 }
