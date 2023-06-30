@@ -55,16 +55,16 @@ public class UserServiceImpl implements UserService {
         if (user == null)
             throw new BadRequestException("Invalid user", "User is null");
 
-        if (user.getName() == null || user.getName().isEmpty())
+        if (user.getName() == null || user.getName().isBlank())
             throw new BadRequestException("Invalid user", "User name is empty");
 
         if (user.getName().length() < 2)
             throw new BadRequestException("Invalid user", "User name is too short");
 
-        if (user.getName().length() > 254)
+        if (user.getName().length() > 250)
             throw new BadRequestException("Invalid user", "User name is too long");
 
-        String nameRegex = "^(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._ ]+(?<![_.])$";
+        String nameRegex = "^(?=.{1,255}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._ ]+(?<![_.])$";
         Pattern namePattern = Pattern.compile(nameRegex);
         if (!namePattern.matcher(user.getName()).matches())
             throw new BadRequestException("Invalid user", "User name is invalid");
@@ -72,9 +72,16 @@ public class UserServiceImpl implements UserService {
         if (user.getEmail() == null || user.getEmail().isEmpty())
             throw new BadRequestException("Invalid user", "User email is empty");
 
+        /*
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\." +
                 "[a-zA-Z0-9_+&*-]+)*@" +
-                "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+                "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{1,10}$"; */
+
+        if (user.getEmail().length() > 254)
+            throw new BadRequestException("Invalid user", "User email is too long");
+
+        String emailRegex = "^[a-zA-Z0-9_.+&*-]{1,64}@(?:[a-zA-Z0-9-]{1,63}+\\.)+([a-zA-Z0-9.]{2,127})$";
+
         Pattern emailPattern = Pattern.compile(emailRegex);
         if (!emailPattern.matcher(user.getEmail()).matches())
             throw new BadRequestException("Invalid user", "User email is invalid");
