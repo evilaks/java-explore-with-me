@@ -1,4 +1,4 @@
-package ru.practicum.controller;
+package ru.practicum.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,14 +30,14 @@ public class UserController {
     // POST /admin/users
     @PostMapping
     public ResponseEntity<UserDto> addUser(@RequestBody UserDto user) {
-        log.info("Adding user: {}", user);
+        log.info("Add user: {}", user);
         return new ResponseEntity<>(userService.add(user), HttpStatus.CREATED);
     }
 
     // DELETE /admin/users/{userId}
     @DeleteMapping("/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
-        log.info("Deleting user with id: {}", userId);
+        log.info("Delete user with id: {}", userId);
         userService.delete(userId);
         return new ResponseEntity<>("User deleted", HttpStatus.NO_CONTENT);
     }

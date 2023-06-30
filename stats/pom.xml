@@ -18,6 +18,8 @@
         <module>stats-client</module>
         <module>stats-dto</module>
     </modules>
+
+
 </project>
 
 

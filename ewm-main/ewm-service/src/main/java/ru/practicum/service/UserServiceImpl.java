@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.dto.user.UserDto;
 import ru.practicum.dto.user.UserDtoMapper;
 import ru.practicum.exception.BadRequestException;
+import ru.practicum.exception.NotFoundException;
 import ru.practicum.repo.UserRepo;
 
 import java.util.List;
@@ -27,7 +28,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto get(Long id) {
-        return userDtoMapper.toDto(userRepo.findById(id).orElseThrow());
+        return userDtoMapper.toDto(userRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found", "User with id " + id + " not found")));
     }
 
     @Override
@@ -48,6 +50,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(Long id) {
+
+        if (!userRepo.existsById(id))
+            throw new NotFoundException("User not found", "User with id " + id + " not found");
+
         userRepo.deleteById(id);
     }
 
