@@ -18,14 +18,13 @@ public class UserController {
 
     private final UserService userService;
 
-    // todo add params
     // GET /admin/users
     @GetMapping
-    public ResponseEntity<List<UserDto>> getUsers(@RequestParam (defaultValue = "9999") List<Long> ids,
-                                                  @RequestParam (defaultValue = "0") Long from,
-                                                  @RequestParam (defaultValue = "10") Long size) {
+    public ResponseEntity<List<UserDto>> getUsers(@RequestParam (required = false) List<Long> ids,
+                                                  @RequestParam (defaultValue = "0") Integer from,
+                                                  @RequestParam (defaultValue = "10") Integer size) {
         log.info("Getting users");
-        return ResponseEntity.ok().body(userService.getAll());
+        return ResponseEntity.ok().body(userService.getAll(ids, from, size));
     }
 
     // POST /admin/users

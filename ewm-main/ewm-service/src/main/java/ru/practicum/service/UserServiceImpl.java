@@ -1,6 +1,7 @@
 package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.dto.user.UserDto;
 import ru.practicum.dto.user.UserDtoMapper;
@@ -30,8 +31,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getAll() {
-        return userRepo.findAll().stream().map(userDtoMapper::toDto).collect(Collectors.toList());
+    public List<UserDto> getAll(List<Long> ids, Integer from, Integer size) {
+
+        int page = from > 0 ? from / size : 0;
+
+        if (ids == null) {
+            return userRepo.findAll(PageRequest.of(page, size)).stream()
+                    .map(userDtoMapper::toDto)
+                    .collect(Collectors.toList());
+        } else {
+            return userRepo.findAllByIdIn(ids, PageRequest.of(page, size)).stream()
+                    .map(userDtoMapper::toDto)
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
