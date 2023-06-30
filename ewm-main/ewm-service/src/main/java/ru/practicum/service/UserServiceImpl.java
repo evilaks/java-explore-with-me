@@ -72,11 +72,6 @@ public class UserServiceImpl implements UserService {
         if (user.getEmail() == null || user.getEmail().isEmpty())
             throw new BadRequestException("Invalid user", "User email is empty");
 
-        /*
-        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\." +
-                "[a-zA-Z0-9_+&*-]+)*@" +
-                "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{1,10}$"; */
-
         if (user.getEmail().length() > 254)
             throw new BadRequestException("Invalid user", "User email is too long");
 
