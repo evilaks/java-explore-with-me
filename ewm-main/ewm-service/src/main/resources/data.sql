@@ -6,9 +6,6 @@ ALTER TABLE compilations ALTER COLUMN id RESTART WITH 1;
 DELETE FROM participation_requests;
 ALTER TABLE participation_requests ALTER COLUMN id RESTART WITH 1;
 
-DELETE FROM request_statuses;
-ALTER TABLE request_statuses ALTER COLUMN id RESTART WITH 1;
-
 DELETE FROM events;
 ALTER TABLE events ALTER COLUMN id RESTART WITH 1;
 
@@ -20,7 +17,4 @@ ALTER TABLE users ALTER COLUMN id RESTART WITH 1;
 
 DELETE FROM categories;
 ALTER TABLE categories ALTER COLUMN id RESTART WITH 1;
-
-DELETE FROM event_states;
-ALTER TABLE event_states ALTER COLUMN id RESTART WITH 1;
 
