@@ -2,6 +2,7 @@ package ru.practicum.controller.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventFullDto;
@@ -23,7 +24,7 @@ public class EventControllerAuth {
     public ResponseEntity<EventFullDto> createEvent(@RequestBody NewEventDto event,
                                                     @PathVariable Long userId) {
         log.info("Creating event {} from user {}", event, userId);
-        return ResponseEntity.ok().body(eventService.createEvent(event, userId));
+        return new ResponseEntity<>(eventService.createEvent(event, userId), HttpStatus.CREATED);
     }
 
     // GET /users/{userId}/events/{eventId}
