@@ -26,7 +26,7 @@ public class Event {
     @ManyToOne(fetch = FetchType.LAZY)
     private User initiator;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Location location;
 
     private Boolean paid;

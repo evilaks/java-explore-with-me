@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.exception.BadRequestException;
+import ru.practicum.exception.ConflictRequestException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.model.ErrorResponse;
 import org.postgresql.util.PSQLException;
@@ -27,6 +28,13 @@ public class ErrorHandler {
     public ErrorResponse handlePSQLException(final PSQLException e) {
         log.warn("PSQL exception caught with message: {}", e.getMessage());
         return new ErrorResponse(HttpStatus.CONFLICT, "Error running SQL-script", e.getMessage(), LocalDateTime.now());
+    }
+
+    @ExceptionHandler(ConflictRequestException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleConflictRequestException(final ConflictRequestException e) {
+        log.warn("ConflictRequest exception caught with message: {}", e.getMessage());
+        return new ErrorResponse(HttpStatus.CONFLICT, e.getReason(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler(NotFoundException.class)
