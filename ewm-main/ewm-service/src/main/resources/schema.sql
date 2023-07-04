@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS "events" (
                           "category_id" int,
                           "confirmed_requests" int,
                           "created_on" timestamp,
-                          "description" varchar(2048),
+                          "description" varchar(8000),
                           "event_date" timestamp,
                           "initiator_id" int,
                           "location_id" int,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "events" (
                           "published_on" timestamp,
                           "request_moderation" boolean,
                           "state" varchar(16),
-                          "title" varchar(64)
+                          "title" varchar(150)
 );
 
 CREATE TABLE IF NOT EXISTS "users" (

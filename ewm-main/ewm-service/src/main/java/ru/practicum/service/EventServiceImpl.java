@@ -13,6 +13,7 @@ import ru.practicum.repo.EventRepo;
 import ru.practicum.repo.LocationRepo;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class EventServiceImpl implements EventService {
         }
 
         if (newEventDto.getRequestModeration() == null) {
-            newEventDto.setRequestModeration(false);
+            newEventDto.setRequestModeration(true);
         }
 
         if (newEventDto.getParticipantLimit() == null) {
@@ -74,54 +75,56 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public List<EventFullDto> getEvents(List<Long> users,
+                                        List<State> states,
+                                        List<Long> categories,
+                                        String rangeStart,
+                                        String rangeEnd,
+                                        int from,
+                                        int size) {
+
+        int page = from > 0 ? from / size : 0;
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
+            LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
+
+            List<Event> events = eventRepo.findAllByParams(users,
+                    states,
+                    categories,
+                    start,
+                    end,
+                    PageRequest.of(page, size));
+            return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
+        }
+
+    }
+
+    @Override
     public EventFullDto getEventByUserAndId(Long userId, Long eventId) {
         return eventDtoMapper.toDto(eventRepo.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found")));
     }
 
     @Override
-    public EventFullDto updateEventByUser(UpdateEventRequest event, Long userId, Long eventId) {
+    @Transactional
+    public EventFullDto updateEventByUser(UpdateEventRequest updateEventRequest, Long userId, Long eventId) {
 
-        // validate event change request
-        if (event.getEventDate() != null && event.getEventDate().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Invalid event date", "Event date can't be in the past");
-        }
+        validateUpdateEvent(updateEventRequest);
 
         Event eventToUpdate = eventRepo.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event or user not found"));
         if (eventToUpdate.getState() == State.PENDING || eventToUpdate.getState() == State.CANCELED) {
             // update event
 
-            if (event.getAnnotation() != null) {
-                eventToUpdate.setAnnotation(event.getAnnotation());
-            }
-            if (event.getCategory() != null) {
-                eventToUpdate.setCategory(categoryService.getCategoryById(event.getCategory()));
-            }
-            if (event.getDescription() != null) {
-                eventToUpdate.setDescription(event.getDescription());
-            }
-            if (event.getEventDate() != null) {
-                eventToUpdate.setEventDate(event.getEventDate());
-            }
-            // todo there can be problems with location
-            if (event.getLocation() != null) {
-                eventToUpdate.setLocation(locationDtoMapper.toEntity(event.getLocation()));
-            }
-            if (event.getPaid() != null) {
-                eventToUpdate.setPaid(event.getPaid());
-            }
-            if (event.getParticipantLimit() != null) {
-                eventToUpdate.setParticipantLimit(event.getParticipantLimit());
-            }
-            if (event.getRequestModeration() != null) {
-                eventToUpdate.setRequestModeration(event.getRequestModeration());
-            }
-            if (event.getTitle() != null) {
-                eventToUpdate.setTitle(event.getTitle());
-            }
-            if (event.getStateAction() != null) {
-                switch (event.getStateAction()) {
+            updateEvent(eventToUpdate, updateEventRequest);
+
+            if (updateEventRequest.getStateAction() != null) {
+                switch (updateEventRequest.getStateAction()) {
                     case CANCEL_REVIEW:
                         eventToUpdate.setState(State.CANCELED);
                         break;
@@ -137,6 +140,74 @@ public class EventServiceImpl implements EventService {
 
         } else {
             throw new ConflictRequestException("Invalid event state", "Event can't be updated");
+        }
+
+    }
+
+    @Override
+    @Transactional
+    public EventFullDto updateEventByAdmin(UpdateEventRequest updateEventRequest, Long eventId) {
+
+        Event eventToUpdate = eventRepo.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
+
+        validateUpdateEvent(updateEventRequest);
+
+        updateEvent(eventToUpdate, updateEventRequest);
+
+        if (eventToUpdate.getState() == State.PENDING || eventToUpdate.getState() == State.CANCELED) {
+
+            if (updateEventRequest.getStateAction() != null) {
+                switch (updateEventRequest.getStateAction()) {
+                    case PUBLISH_EVENT:
+                        if (eventToUpdate.getState() == State.PENDING) {
+                            eventToUpdate.setState(State.PUBLISHED);
+                            eventToUpdate.setPublishedOn(LocalDateTime.now());
+                        } else {
+                            throw new ConflictRequestException("Invalid event state", "Event can't be updated");
+                        }
+                        break;
+                    case REJECT_EVENT:
+                        eventToUpdate.setState(State.CANCELED);
+                        break;
+                    default:
+                        throw new BadRequestException("Invalid event state action", "Event state action is invalid");
+                }
+            }
+
+            // validate event change request
+            if (eventToUpdate.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+                throw new BadRequestException("Invalid event date", "Event date can't be in the past");
+            }
+
+            return eventDtoMapper.toDto(eventRepo.save(eventToUpdate));
+
+        } else {
+            throw new ConflictRequestException("Invalid event state", "Event can't be updated");
+        }
+    }
+
+    private void validateUpdateEvent(UpdateEventRequest updateEventRequest) {
+        if (updateEventRequest.getEventDate() != null && updateEventRequest.getEventDate().isBefore(LocalDateTime.now())) {
+            throw new ConflictRequestException("Invalid event", "Event date must be in the future");
+        }
+
+        if (updateEventRequest.getAnnotation() != null &&
+                (updateEventRequest.getAnnotation().length() < 20
+                || updateEventRequest.getAnnotation().length() > 2000)) {
+            throw new BadRequestException("Invalid event", "Invalid annotation length");
+        }
+
+        if (updateEventRequest.getDescription() != null &&
+                (updateEventRequest.getDescription().length() < 20
+                || updateEventRequest.getDescription().length() > 7000)) {
+            throw new BadRequestException("Invalid event", "Invalid description length");
+        }
+
+        if (updateEventRequest.getTitle() != null &&
+                (updateEventRequest.getTitle().length() < 3
+                || updateEventRequest.getTitle().length() > 120)) {
+            throw new BadRequestException("Invalid event", "Invalid title length");
         }
 
     }
@@ -174,6 +245,37 @@ public class EventServiceImpl implements EventService {
                 || newEventDto.getTitle().length() < 3
                 || newEventDto.getTitle().length() > 120) {
             throw new BadRequestException("Invalid event", "Title is required");
+        }
+    }
+
+    private void updateEvent(Event event, UpdateEventRequest eventRequest) {
+        if (eventRequest.getAnnotation() != null) {
+            event.setAnnotation(eventRequest.getAnnotation());
+        }
+        if (eventRequest.getCategory() != null) {
+            event.setCategory(categoryService.getCategoryById(eventRequest.getCategory()));
+        }
+        if (eventRequest.getDescription() != null) {
+            event.setDescription(eventRequest.getDescription());
+        }
+        if (eventRequest.getEventDate() != null) {
+            event.setEventDate(eventRequest.getEventDate());
+        }
+        // todo there can be problems with location
+        if (eventRequest.getLocation() != null) {
+            event.setLocation(locationDtoMapper.toEntity(eventRequest.getLocation()));
+        }
+        if (eventRequest.getPaid() != null) {
+            event.setPaid(eventRequest.getPaid());
+        }
+        if (eventRequest.getParticipantLimit() != null) {
+            event.setParticipantLimit(eventRequest.getParticipantLimit());
+        }
+        if (eventRequest.getRequestModeration() != null) {
+            event.setRequestModeration(eventRequest.getRequestModeration());
+        }
+        if (eventRequest.getTitle() != null) {
+            event.setTitle(eventRequest.getTitle());
         }
     }
 }

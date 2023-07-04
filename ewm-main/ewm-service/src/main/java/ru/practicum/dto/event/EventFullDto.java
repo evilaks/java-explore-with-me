@@ -23,7 +23,7 @@ public class EventFullDto {
 
     private Boolean paid;
     private Long participantLimit;
-    private LocalDateTime publshedOn;
+    private LocalDateTime publishedOn;
     private Boolean requestModeration;
 
     private State state;

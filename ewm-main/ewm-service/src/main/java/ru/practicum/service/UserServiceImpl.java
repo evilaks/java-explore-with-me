@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
         if (user.getName().length() > 250)
             throw new BadRequestException("Invalid user", "User name is too long");
 
-        String nameRegex = "^(?=.{1,255}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._ ]+(?<![_.])$";
+        String nameRegex = "^[a-zA-Z0-9][a-zA-Z0-9. ]*$";
         Pattern namePattern = Pattern.compile(nameRegex);
         if (!namePattern.matcher(user.getName()).matches())
             throw new BadRequestException("Invalid user", "User name is invalid");
