@@ -21,15 +21,15 @@ public interface EventService {
                                  int from,
                                  int size);
 
-    List<EventFullDto> getEventsUnath(String text,
-                                      List<Long> categories,
-                                      Boolean paid,
-                                      String rangeStart,
-                                      String rangeEnd,
-                                      Boolean onlyAvailable,
-                                      String sort,
-                                      int from,
-                                      int size);
+    List<EventFullDto> getEventsUnauth(String text,
+                                       List<Long> categories,
+                                       Boolean paid,
+                                       String rangeStart,
+                                       String rangeEnd,
+                                       Boolean onlyAvailable,
+                                       String sort,
+                                       int from,
+                                       int size);
 
     EventFullDto getEventById(Long eventId);
 

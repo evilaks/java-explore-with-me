@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.exception.StatsClientException;
 import ru.practicum.model.ErrorResponse;
 import org.postgresql.util.PSQLException;
 
@@ -41,6 +42,13 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFoundException(final NotFoundException e) {
         log.warn("NotFound exception caught with message: {}", e.getMessage());
+        return new ErrorResponse(HttpStatus.NOT_FOUND, e.getReason(), e.getMessage(), LocalDateTime.now());
+    }
+
+    @ExceptionHandler(StatsClientException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleStatsClientException(final StatsClientException e) {
+        log.warn("StatsClient exception caught with message: {}", e.getMessage());
         return new ErrorResponse(HttpStatus.NOT_FOUND, e.getReason(), e.getMessage(), LocalDateTime.now());
     }
 }

@@ -6,7 +6,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.client.StatsClient;
-import ru.practicum.dto.StatisticsEventDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
@@ -116,15 +115,15 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventFullDto> getEventsUnath(String text,
-                                             List<Long> categories,
-                                             Boolean paid,
-                                             String rangeStart,
-                                             String rangeEnd,
-                                             Boolean onlyAvailable,
-                                             String sort,
-                                             int from,
-                                             int size) {
+    public List<EventFullDto> getEventsUnauth(String text,
+                                              List<Long> categories,
+                                              Boolean paid,
+                                              String rangeStart,
+                                              String rangeEnd,
+                                              Boolean onlyAvailable,
+                                              String sort,
+                                              int from,
+                                              int size) {
 
         int page = from > 0 ? from / size : 0;
 
@@ -157,13 +156,6 @@ public class EventServiceImpl implements EventService {
                     // onlyAvailable,
                     PageRequest.of(page, size, Sort.by(sort).descending()));
 
-            StatisticsEventDto statEvent = new StatisticsEventDto();
-            statEvent.setApp("ewm-service");
-            statEvent.setIp("1.1.1.1");  // TODO: get ip
-            statEvent.setUri("/events");
-            statEvent.setTimestamp(LocalDateTime.now());
-            statsClient.saveEvent(statEvent);
-
             return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
 
         } catch (DateTimeParseException e) {
@@ -173,16 +165,10 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventById(Long eventId) {
+
         EventFullDto event = eventRepo.findByIdAndState(eventId, State.PUBLISHED)
                 .map(eventDtoMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
-
-        StatisticsEventDto statEvent = new StatisticsEventDto();
-        statEvent.setApp("ewm-service");
-        statEvent.setIp("1.1.1.1");  // TODO: get ip
-        statEvent.setUri("/events/" + eventId);
-        statEvent.setTimestamp(LocalDateTime.now());
-        statsClient.saveEvent(statEvent);
 
         return event;
     }
