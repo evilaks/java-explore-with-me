@@ -92,6 +92,11 @@ public class EventServiceImpl implements EventService {
 
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            if (rangeStart == null) {
+                rangeStart = LocalDateTime.now().format(formatter);
+            }
+
             LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
             LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
 
@@ -125,6 +130,11 @@ public class EventServiceImpl implements EventService {
 
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            if (rangeStart == null) {
+                rangeStart = LocalDateTime.now().format(formatter);
+            }
+
             LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
             LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
 

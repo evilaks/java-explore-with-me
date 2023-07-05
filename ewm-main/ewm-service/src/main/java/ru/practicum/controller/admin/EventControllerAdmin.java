@@ -25,7 +25,7 @@ public class EventControllerAdmin {
     public ResponseEntity<List<EventFullDto>> getEvents(@RequestParam(required = false) List<Long> users,
                                                         @RequestParam(required = false) List<State> states,
                                                         @RequestParam(required = false) List<Long> categories,
-                                                        @RequestParam(defaultValue = "2000-01-01 00:00:01") String rangeStart,
+                                                        @RequestParam(required = false) String rangeStart,
                                                         @RequestParam(defaultValue = "2100-01-01 00:00:01") String rangeEnd,
                                                         @RequestParam(defaultValue = "0") int from,
                                                         @RequestParam(defaultValue = "10") int size) {

@@ -26,7 +26,7 @@ public class EventControllerUnauth {
                                                         @RequestParam(required = false) String rangeStart,
                                                         @RequestParam(defaultValue = "3000-01-01 23:59:59") String rangeEnd,
                                                         @RequestParam(defaultValue = "false") Boolean onlyAvailable,
-                                                        @RequestParam(required = false) String sort,
+                                                        @RequestParam(defaultValue = "ID") String sort,
                                                         @RequestParam(defaultValue = "0") int from,
                                                         @RequestParam(defaultValue = "10") int size) {
         log.info("Getting events with params: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
