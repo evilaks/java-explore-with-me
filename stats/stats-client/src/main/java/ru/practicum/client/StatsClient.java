@@ -1,5 +1,6 @@
 package ru.practicum.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class StatsClient extends BaseClient {
 
@@ -38,11 +40,12 @@ public class StatsClient extends BaseClient {
                 "uris", uris,
                 "unique", unique
         );
+        log.info("Getting statistics for period {} - {}, uris: {}, unique: {}", start, end, uris, unique);
         return get("/stats?start={start}&end={end}&uris={uris}&unique={unique}", parameters);
     }
 
     public ResponseEntity<Object> saveEvent(StatisticsEventDto body) {
-
+        log.info("Saving statistics event: {}", body);
         return post("/hit", null, body);
     }
 }

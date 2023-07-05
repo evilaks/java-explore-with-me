@@ -2,8 +2,11 @@ package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.client.StatsClient;
+import ru.practicum.dto.StatisticsEventDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
@@ -14,6 +17,7 @@ import ru.practicum.repo.LocationRepo;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,7 @@ public class EventServiceImpl implements EventService {
     private final LocationRepo locationRepo;
     private final EventDtoMapper eventDtoMapper;
     private final LocationDtoMapper locationDtoMapper;
+    private final StatsClient statsClient;
 
     @Override
     @Transactional
@@ -96,12 +101,80 @@ public class EventServiceImpl implements EventService {
                     start,
                     end,
                     PageRequest.of(page, size));
+
             return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
 
-        } catch (Exception e) {
+        } catch (DateTimeParseException e) {
             throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
         }
 
+    }
+
+    @Override
+    public List<EventFullDto> getEventsUnath(String text,
+                                             List<Long> categories,
+                                             Boolean paid,
+                                             String rangeStart,
+                                             String rangeEnd,
+                                             Boolean onlyAvailable,
+                                             String sort,
+                                             int from,
+                                             int size) {
+
+        int page = from > 0 ? from / size : 0;
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
+            LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
+
+            switch (sort) {
+                case "EVENT_DATE":
+                    sort = "eventDate";
+                    break;
+                case "VIEWS":
+                    sort = "id";  // todo implement views
+                    break;
+                default:
+                    sort = "id";
+            }
+
+            List<Event> events = eventRepo.findAllByParamsUnath(text,
+                    categories,
+                    paid,
+                    start,
+                    end,
+                    // onlyAvailable,
+                    PageRequest.of(page, size, Sort.by(sort).descending()));
+
+            StatisticsEventDto statEvent = new StatisticsEventDto();
+            statEvent.setApp("ewm-service");
+            statEvent.setIp("1.1.1.1");  // TODO: get ip
+            statEvent.setUri("/events");
+            statEvent.setTimestamp(LocalDateTime.now());
+            statsClient.saveEvent(statEvent);
+
+            return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
+
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
+        }
+    }
+
+    @Override
+    public EventFullDto getEventById(Long eventId) {
+        EventFullDto event = eventRepo.findByIdAndState(eventId, State.PUBLISHED)
+                .map(eventDtoMapper::toDto)
+                .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
+
+        StatisticsEventDto statEvent = new StatisticsEventDto();
+        statEvent.setApp("ewm-service");
+        statEvent.setIp("1.1.1.1");  // TODO: get ip
+        statEvent.setUri("/events/" + eventId);
+        statEvent.setTimestamp(LocalDateTime.now());
+        statsClient.saveEvent(statEvent);
+
+        return event;
     }
 
     @Override

@@ -29,4 +29,20 @@ public interface EventRepo extends JpaRepository<Event, Long> {
                                 LocalDateTime rangeStart,
                                 LocalDateTime rangeEnd,
                                 Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE (e.description LIKE :text or e.annotation LIKE :text or :text is null) " +
+            "AND (e.state = 'PUBLISHED')" +
+            "AND (e.category.id IN :categories or :categories is null)" +
+            "AND e.eventDate BETWEEN :rangeStart AND :rangeEnd " +
+            "AND (e.paid = :paid or :paid is null)" +
+            // todo participant limit
+            "ORDER BY e.eventDate DESC")
+    List<Event> findAllByParamsUnath(String text,
+                                     List<Long> categories,
+                                     Boolean paid,
+                                     LocalDateTime rangeStart,
+                                     LocalDateTime rangeEnd,
+                                     Pageable pageable);
+
+    Optional<Event> findByIdAndState(Long eventId, State state);
 }

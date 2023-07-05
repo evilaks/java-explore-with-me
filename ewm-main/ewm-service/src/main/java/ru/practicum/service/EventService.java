@@ -21,6 +21,18 @@ public interface EventService {
                                  int from,
                                  int size);
 
+    List<EventFullDto> getEventsUnath(String text,
+                                      List<Long> categories,
+                                      Boolean paid,
+                                      String rangeStart,
+                                      String rangeEnd,
+                                      Boolean onlyAvailable,
+                                      String sort,
+                                      int from,
+                                      int size);
+
+    EventFullDto getEventById(Long eventId);
+
     EventFullDto getEventByUserAndId(Long userId, Long eventId);
 
     EventFullDto updateEventByUser(UpdateEventRequest event, Long userId, Long eventId);
