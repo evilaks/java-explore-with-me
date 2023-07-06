@@ -19,6 +19,7 @@ import ru.practicum.repo.LocationRepo;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -145,28 +146,50 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Invalid date range", "Start date should be before end date");
             }
 
+            List<Event> events;
+
             switch (sort) {
                 case "EVENT_DATE":
-                    sort = "eventDate";
+                    events = eventRepo.findAllByParamsUnath(text,
+                            categories,
+                            paid,
+                            start,
+                            end,
+                            // todo onlyAvailable,
+                            PageRequest.of(page, size, Sort.by("eventDate").descending()));
                     break;
                 case "VIEWS":
-                    sort = "id";  // todo implement views
+                    events = eventRepo.findAllByParamsUnath(text,
+                            categories,
+                            paid,
+                            start,
+                            end,
+                            // todo onlyAvailable,
+                            PageRequest.of(page, size));
                     break;
                 default:
-                    sort = "id";
+                    events = eventRepo.findAllByParamsUnath(text,
+                            categories,
+                            paid,
+                            start,
+                            end,
+                            // todo onlyAvailable,
+                            PageRequest.of(page, size, Sort.by("id").descending()));
             }
 
-            List<Event> events = eventRepo.findAllByParamsUnath(text,
-                    categories,
-                    paid,
-                    start,
-                    end,
-                    // onlyAvailable,
-                    PageRequest.of(page, size, Sort.by(sort).descending()));
 
 
+            List<EventFullDto> result = addViews(events.stream()
+                    .map(eventDtoMapper::toDto)
+                    .collect(Collectors.toList()));
 
-            return addViews(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
+            if (sort.equals("VIEWS")) {
+                return result.stream()
+                        .sorted(Comparator.comparing(EventFullDto::getViews).reversed())
+                        .collect(Collectors.toList());
+            } else {
+                return result;
+            }
 
         } catch (DateTimeParseException e) {
             throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
@@ -199,8 +222,8 @@ public class EventServiceImpl implements EventService {
         Event eventToUpdate = eventRepo.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event or user not found"));
         if (eventToUpdate.getState() == State.PENDING || eventToUpdate.getState() == State.CANCELED) {
-            // update event
 
+            // update event
             updateEvent(eventToUpdate, updateEventRequest);
 
             if (updateEventRequest.getStateAction() != null) {
