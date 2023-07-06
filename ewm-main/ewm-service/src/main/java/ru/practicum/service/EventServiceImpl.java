@@ -1,11 +1,13 @@
 package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.client.StatsClient;
+import ru.practicum.dto.StatisticsReportDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
@@ -18,8 +20,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -137,6 +141,10 @@ public class EventServiceImpl implements EventService {
             LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
             LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
 
+            if (start.isAfter(end)) {
+                throw new BadRequestException("Invalid date range", "Start date should be before end date");
+            }
+
             switch (sort) {
                 case "EVENT_DATE":
                     sort = "eventDate";
@@ -156,7 +164,9 @@ public class EventServiceImpl implements EventService {
                     // onlyAvailable,
                     PageRequest.of(page, size, Sort.by(sort).descending()));
 
-            return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
+
+
+            return addViews(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
 
         } catch (DateTimeParseException e) {
             throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
@@ -170,7 +180,8 @@ public class EventServiceImpl implements EventService {
                 .map(eventDtoMapper::toDto)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
 
-        return event;
+
+        return addViews(List.of(event)).get(0);
     }
 
     @Override
@@ -258,7 +269,7 @@ public class EventServiceImpl implements EventService {
 
     private void validateUpdateEvent(UpdateEventRequest updateEventRequest) {
         if (updateEventRequest.getEventDate() != null && updateEventRequest.getEventDate().isBefore(LocalDateTime.now())) {
-            throw new ConflictRequestException("Invalid event", "Event date must be in the future");
+            throw new BadRequestException("Invalid event", "Event date must be in the future");
         }
 
         if (updateEventRequest.getAnnotation() != null &&
@@ -347,4 +358,27 @@ public class EventServiceImpl implements EventService {
             event.setTitle(eventRequest.getTitle());
         }
     }
+
+    private List<EventFullDto> addViews(List<EventFullDto> events) {
+        List<String> eventUris = events.stream()
+                .map(eventFullDto -> ("/events/" + eventFullDto.getId()))
+                .collect(Collectors.toList());
+
+        List<StatisticsReportDto> stats = statsClient.getStats(LocalDateTime.now().minusYears(100),
+                LocalDateTime.now(), eventUris, true);
+
+        Map<String, Long> uriToHitsMap = stats.stream()
+                .collect(Collectors.toMap(StatisticsReportDto::getUri, StatisticsReportDto::getHits));
+
+        for (EventFullDto event : events) {
+            String uri = "/events/" + event.getId();
+            if (uriToHitsMap.containsKey(uri)) {
+                event.setViews(uriToHitsMap.get(uri));
+            }
+        }
+
+        return events;
+    }
+
 }
+
