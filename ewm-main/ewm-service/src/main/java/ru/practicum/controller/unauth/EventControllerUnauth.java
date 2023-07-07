@@ -70,6 +70,6 @@ public class EventControllerUnauth {
                 .timestamp(LocalDateTime.now())
                 .build());
 
-        return new ResponseEntity<>(eventService.getEventById(eventId), HttpStatus.OK);
+        return new ResponseEntity<>(eventService.getEventDtoById(eventId), HttpStatus.OK);
     }
 }

@@ -196,8 +196,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    @Override
-    public EventFullDto getEventById(Long eventId) {
+    public EventFullDto getEventDtoById(Long eventId) {
 
         EventFullDto event = eventRepo.findByIdAndState(eventId, State.PUBLISHED)
                 .map(eventDtoMapper::toDto)
@@ -205,6 +204,13 @@ public class EventServiceImpl implements EventService {
 
 
         return addViews(List.of(event)).get(0);
+    }
+
+    @Override
+    public Event getEventById(Long eventId) {
+
+        return eventRepo.findByIdAndState(eventId, State.PUBLISHED)
+                .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
     }
 
     @Override
