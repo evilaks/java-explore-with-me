@@ -2,9 +2,8 @@ package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.dto.request.ParticipationRequestDto;
-import ru.practicum.dto.request.ParticipationRequestDtoMapper;
-import ru.practicum.dto.request.RequestStatus;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.dto.request.*;
 import ru.practicum.exception.ConflictRequestException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.model.Event;
@@ -19,6 +18,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ParticipationRequestServiceImpl implements ParticipationRequestService {
 
@@ -28,6 +28,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     private final UserService userService;
     private final EventService eventService;
 
+    @Transactional
     @Override
     public ParticipationRequestDto createParticipationRequest(Long userId, Long eventId) {
 
@@ -41,10 +42,10 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         request.setRequester(requester);
         request.setEvent(event);
         request.setCreated(LocalDateTime.now());
-        if (event.getRequestModeration()) {
+        if (event.getRequestModeration() && event.getParticipantLimit() != 0) {
             request.setStatus(RequestStatus.PENDING);
         } else {
-            request.setStatus(RequestStatus.APPROVED);
+            request.setStatus(RequestStatus.CONFIRMED);
         }
 
         ParticipationRequest savedRequest = partRequestRepo.save(request);
@@ -52,6 +53,7 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
         return partRequestDtoMapper.toDto(savedRequest);
     }
 
+    @Transactional
     @Override
     public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
 
@@ -82,8 +84,65 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     }
 
     @Override
-    public List<ParticipationRequestDto> getParticipationRequestsByEventId(Long eventId) {
-        return null;
+    public List<ParticipationRequestDto> getParticipationRequestsByEventId(Long userId, Long eventId) {
+
+        User initiator = userService.getUserById(userId);
+        Event event = eventService.getEventById(eventId);
+
+        if (!event.getInitiator().getId().equals(initiator.getId())) {
+            throw new ConflictRequestException("Request conflict", "User can't get requests for other user's event");
+        }
+
+        return partRequestRepo.findAllByEventId(eventId)
+                .stream()
+                .map(partRequestDtoMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public EventRequestStatusUpdateResult updateRequests(Long userId,
+                                                         Long eventId,
+                                                         EventRequestsStatusUpdateRequest request) {
+
+        User initiator = userService.getUserById(userId);
+        Event event = eventService.getEventById(eventId);
+
+        if (!event.getInitiator().getId().equals(initiator.getId())) {
+            throw new ConflictRequestException("Request conflict", "User can't update requests for other user's event");
+        }
+
+        // todo maybe refactor this
+        request.getRequestIds()
+                .forEach(id -> {
+                    ParticipationRequest partRequest = partRequestRepo.findById(id).orElseThrow(
+                            () -> new NotFoundException("Request not found", "Request with id " + id + " not found")
+                    );
+                    if (!partRequest.getStatus().equals(RequestStatus.PENDING)) {
+                        throw new ConflictRequestException("Bad request", "Wrong request status");
+                    }
+                    if (event.getParticipantLimit() <= countParticipants(event)) {
+                        throw new ConflictRequestException("Request conflict", "Max participants limit reached");
+                    }
+                    partRequest.setStatus(request.getStatus());
+                    partRequestRepo.save(partRequest);
+                });
+
+        List<ParticipationRequestDto> confirmedRequests = partRequestRepo.findAllByEventIdAndStatus(eventId, RequestStatus.CONFIRMED)
+                .stream()
+                .map(partRequestDtoMapper::toDto)
+                .collect(Collectors.toList());
+
+        List<ParticipationRequestDto> rejectedRequests = partRequestRepo.findAllByEventIdAndStatus(eventId, RequestStatus.REJECTED)
+                .stream()
+                .map(partRequestDtoMapper::toDto)
+                .collect(Collectors.toList());
+
+        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
+        result.setConfirmedRequests(confirmedRequests);
+        result.setRejectedRequests(rejectedRequests);
+
+        return result;
     }
 
     private void validateParticipationRequest(User requester, Event event) {
@@ -96,15 +155,14 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
             throw new ConflictRequestException("Request conflict", "User can't participate in unpublished event");
         }
 
-        if (countParticipants(event) > event.getParticipantLimit()) {
+        if (countParticipants(event) >= event.getParticipantLimit() && event.getParticipantLimit() != 0) {
             throw new ConflictRequestException("Request conflict", "Max participants limit reached");
         }
-
 
     }
 
     private Long countParticipants(Event event) {
-        return partRequestRepo.countByIdIsAndStatus(event.getId(), RequestStatus.APPROVED);
+        return partRequestRepo.countParticipationRequestsByEventAndStatus(event, RequestStatus.CONFIRMED);
     }
 
 

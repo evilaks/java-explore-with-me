@@ -2,7 +2,7 @@ package ru.practicum.dto.request;
 
 public enum RequestStatus {
     PENDING,
-    APPROVED,
+    CONFIRMED,
     REJECTED,
     CANCELED
 }

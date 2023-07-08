@@ -9,12 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.client.StatsClient;
 import ru.practicum.dto.StatisticsReportDto;
 import ru.practicum.dto.event.*;
+import ru.practicum.dto.request.RequestStatus;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.model.*;
 import ru.practicum.repo.EventRepo;
 import ru.practicum.repo.LocationRepo;
+import ru.practicum.repo.ParticipationRequestRepo;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +39,7 @@ public class EventServiceImpl implements EventService {
     private final EventDtoMapper eventDtoMapper;
     private final LocationDtoMapper locationDtoMapper;
     private final StatsClient statsClient;
+    private final ParticipationRequestRepo partRequestRepo;
 
     @Override
     @Transactional
@@ -80,7 +83,7 @@ public class EventServiceImpl implements EventService {
         int page = from > 0 ? from / size : 0;
 
         List<Event> events = eventRepo.findByInitiatorId(userId, PageRequest.of(page, size));
-        return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
+        return addViewsAndConfirmedRequests(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
     }
 
     @Override
@@ -111,7 +114,7 @@ public class EventServiceImpl implements EventService {
                     end,
                     PageRequest.of(page, size));
 
-            return events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList());
+            return addViewsAndConfirmedRequests(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
 
         } catch (DateTimeParseException e) {
             throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
@@ -179,16 +182,16 @@ public class EventServiceImpl implements EventService {
 
 
 
-            List<EventFullDto> result = addViews(events.stream()
+            List<EventFullDto> result = addViewsAndConfirmedRequests(events.stream()
                     .map(eventDtoMapper::toDto)
                     .collect(Collectors.toList()));
 
             if (sort.equals("VIEWS")) {
-                return result.stream()
+                return addViewsAndConfirmedRequests(result.stream()
                         .sorted(Comparator.comparing(EventFullDto::getViews).reversed())
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toList()));
             } else {
-                return result;
+                return addViewsAndConfirmedRequests(result);
             }
 
         } catch (DateTimeParseException e) {
@@ -203,13 +206,13 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
 
 
-        return addViews(List.of(event)).get(0);
+        return addViewsAndConfirmedRequests(List.of(event)).get(0);
     }
 
     @Override
     public Event getEventById(Long eventId) {
 
-        return eventRepo.findByIdAndState(eventId, State.PUBLISHED)
+        return eventRepo.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
     }
 
@@ -335,7 +338,7 @@ public class EventServiceImpl implements EventService {
         }
 
         if (newEventDto.getEventDate().isBefore(LocalDateTime.now())) {
-            throw new ConflictRequestException("Invalid event", "Event date must be in the future");
+            throw new BadRequestException("Invalid event", "Event date must be in the future");
         }
 
         if (newEventDto.getAnnotation() == null
@@ -388,7 +391,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private List<EventFullDto> addViews(List<EventFullDto> events) {
+    private List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events) {
         List<String> eventUris = events.stream()
                 .map(eventFullDto -> ("/events/" + eventFullDto.getId()))
                 .collect(Collectors.toList());
@@ -401,9 +404,10 @@ public class EventServiceImpl implements EventService {
 
         for (EventFullDto event : events) {
             String uri = "/events/" + event.getId();
-            if (uriToHitsMap.containsKey(uri)) {
-                event.setViews(uriToHitsMap.get(uri));
-            }
+            event.setViews(uriToHitsMap.getOrDefault(uri, 0L));
+            Long confirmedRequests = partRequestRepo.countParticipationRequestsByEventAndStatus(
+                    eventDtoMapper.toEntity(event), RequestStatus.CONFIRMED);
+            event.setConfirmedRequests(confirmedRequests);
         }
 
         return events;

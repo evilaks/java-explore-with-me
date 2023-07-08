@@ -8,7 +8,11 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
+import ru.practicum.dto.request.EventRequestsStatusUpdateRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
+import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.service.EventService;
+import ru.practicum.service.ParticipationRequestService;
 
 import java.util.List;
 
@@ -19,6 +23,7 @@ import java.util.List;
 public class EventControllerAuth {
 
     private final EventService eventService;
+    private final ParticipationRequestService participationRequestService;
 
     // GET /users/{userId}/events?from=0&size=10
     @GetMapping
@@ -55,9 +60,20 @@ public class EventControllerAuth {
     }
 
     // GET /users/{userId}/events/{eventId}/requests
-
+    @GetMapping(path = "/{eventId}/requests")
+    public ResponseEntity<List<ParticipationRequestDto>> getEventRequests(@PathVariable Long userId,
+                                                                          @PathVariable Long eventId) {
+        log.info("Getting requests for event {} from user {}", eventId, userId);
+        return new ResponseEntity<>(participationRequestService.getParticipationRequestsByEventId(userId, eventId), HttpStatus.OK);
+    }
 
     // PATCH /users/{userId}/events/{eventId}/requests
-
+    @PatchMapping(path = "/{eventId}/requests")
+    public ResponseEntity<EventRequestStatusUpdateResult> acceptRequest(@PathVariable Long userId,
+                                                                        @PathVariable Long eventId,
+                                                                        @RequestBody EventRequestsStatusUpdateRequest updateRequest) {
+        log.info("Updating requests for event {} from user {}", eventId, userId);
+        return new ResponseEntity<>(participationRequestService.updateRequests(userId, eventId, updateRequest), HttpStatus.OK);
+    }
 
 }
