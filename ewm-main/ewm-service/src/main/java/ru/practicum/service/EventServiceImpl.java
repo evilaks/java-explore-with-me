@@ -374,7 +374,6 @@ public class EventServiceImpl implements EventService {
         if (eventRequest.getEventDate() != null) {
             event.setEventDate(eventRequest.getEventDate());
         }
-        // todo there can be problems with location
         if (eventRequest.getLocation() != null) {
             event.setLocation(locationDtoMapper.toEntity(eventRequest.getLocation()));
         }

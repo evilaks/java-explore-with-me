@@ -35,7 +35,6 @@ public interface EventRepo extends JpaRepository<Event, Long> {
             "AND (e.category.id IN :categories or :categories is null)" +
             "AND e.eventDate BETWEEN :rangeStart AND :rangeEnd " +
             "AND (e.paid = :paid or :paid is null)" +
-            // todo participant limit
             "ORDER BY e.eventDate DESC")
     List<Event> findAllByParamsUnath(String text,
                                      List<Long> categories,
