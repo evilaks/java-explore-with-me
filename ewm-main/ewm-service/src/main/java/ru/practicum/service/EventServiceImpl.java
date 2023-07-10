@@ -418,12 +418,19 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto addViewsAndConfirmedRequests(EventFullDto event) {
         String uri = "/events/" + event.getId();
-        Long views = statsClient.getStats(LocalDateTime.now().minusYears(100),
-                LocalDateTime.now(), Collections.singletonList(uri), true).get(0).getHits();
-        event.setViews(views);
+
+        List<StatisticsReportDto> statReport = statsClient.getStats(LocalDateTime.now().minusYears(100),
+                LocalDateTime.now(), Collections.singletonList(uri), true);
+        if (statReport.isEmpty()) {
+            event.setViews(0L);
+        } else {
+            event.setViews(statReport.get(0).getHits());
+        }
+
         Long confirmedRequests = partRequestRepo.countParticipationRequestsByEventAndStatus(
                 eventDtoMapper.toEntity(event), RequestStatus.CONFIRMED);
         event.setConfirmedRequests(confirmedRequests);
+
         return event;
     }
 
