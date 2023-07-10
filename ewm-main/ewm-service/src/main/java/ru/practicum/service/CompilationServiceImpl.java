@@ -2,11 +2,14 @@ package ru.practicum.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.compilation.CompilationDtoMapper;
 import ru.practicum.dto.compilation.CompilationDtoToSave;
 import ru.practicum.dto.compilation.CompilationDtoToShow;
+import ru.practicum.dto.event.EventDtoMapper;
+import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.model.Compilation;
@@ -16,6 +19,7 @@ import ru.practicum.repo.EventRepo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,15 +30,55 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepo compilationRepo;
     private final CompilationDtoMapper compilationDtoMapper;
     private final EventRepo eventRepo;
+    private final EventDtoMapper eventDtoMapper;
+    private final EventService eventService;
 
     @Override
-    public List<CompilationDtoToShow> getAll() {
-        return null;
+    public List<CompilationDtoToShow> getCompilations(Boolean pinned, Integer from, Integer size) {
+
+        int page = from > 0 ? from / size : 0;
+
+        if (pinned != null) {
+            return compilationRepo.findAllByPinned(pinned, PageRequest.of(page, size))
+                    .stream()
+                    .map(compilation -> compilationDtoMapper.toDto(compilation,
+                            eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                                            .stream()
+                                            .map(eventDtoMapper::toDto)
+                                            .collect(Collectors.toList()))
+                                    .stream()
+                                    .map(eventDtoMapper::fullDtoToShortDto)
+                                    .collect(Collectors.toList())))
+                    .collect(Collectors.toList());
+        } else {
+            return compilationRepo.findAll(PageRequest.of(page, size))
+                    .stream()
+                    .map(compilation -> compilationDtoMapper.toDto(compilation,
+                            eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                                    .stream()
+                                    .map(eventDtoMapper::toDto)
+                                    .collect(Collectors.toList()))
+                            .stream()
+                            .map(eventDtoMapper::fullDtoToShortDto)
+                            .collect(Collectors.toList())))
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
     public CompilationDtoToShow getById(Long id) {
-        return null;
+
+
+        return compilationRepo.findById(id)
+                .map(compilation -> compilationDtoMapper.toDto(compilation,
+                        eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                                .stream()
+                                .map(eventDtoMapper::toDto)
+                                .collect(Collectors.toList()))
+                                .stream()
+                                .map(eventDtoMapper::fullDtoToShortDto)
+                                .collect(Collectors.toList())))
+                .orElseThrow(() -> new NotFoundException("Compilation not found", "Compilation with id " + id + " not found"));
     }
 
     @Transactional
@@ -54,11 +98,16 @@ public class CompilationServiceImpl implements CompilationService {
             events = new ArrayList<>();
         }
 
+        List<EventShortDto> eventShortDtos = events.stream()
+                .map(eventDtoMapper::toShortDto)
+                .collect(Collectors.toList());
+
         Compilation compilation = compilationRepo.save(compilationDtoMapper.toEntity(compilationDto, events));
 
-        return compilationDtoMapper.toDto(compilation, events);
+        return compilationDtoMapper.toDto(compilation, eventShortDtos);
     }
 
+    @Transactional
     @Override
     public void deleteCompilation(Long compilationId) {
         if (compilationRepo.existsById(compilationId)) {
@@ -71,8 +120,6 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     @Override
     public CompilationDtoToShow updateCompilation(Long compilationId, CompilationDtoToSave compilationDto) {
-
-        validateCompilation(compilationDto);
 
         List<Event> events;
         Compilation compilation = compilationRepo.findById(compilationId)
@@ -92,12 +139,20 @@ public class CompilationServiceImpl implements CompilationService {
         }
 
         if (compilationDto.getTitle() != null) {
+            validateCompilation(compilationDto);
             compilation.setTitle(compilationDto.getTitle());
         }
 
         compilationRepo.save(compilation);
 
-        return compilationDtoMapper.toDto(compilation, compilation.getEvents());
+        return compilationDtoMapper.toDto(compilation,
+                eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                                .stream()
+                                .map(eventDtoMapper::toDto)
+                                .collect(Collectors.toList()))
+                        .stream()
+                        .map(eventDtoMapper::fullDtoToShortDto)
+                        .collect(Collectors.toList()));
 
     }
 

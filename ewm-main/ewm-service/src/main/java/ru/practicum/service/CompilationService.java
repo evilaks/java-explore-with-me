@@ -6,7 +6,7 @@ import ru.practicum.dto.compilation.CompilationDtoToShow;
 import java.util.List;
 
 public interface CompilationService {
-    List<CompilationDtoToShow> getAll();
+    List<CompilationDtoToShow> getCompilations(Boolean pinned, Integer from, Integer size);
 
     CompilationDtoToShow getById(Long id);
 

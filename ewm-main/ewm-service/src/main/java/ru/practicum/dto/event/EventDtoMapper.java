@@ -19,6 +19,7 @@ public interface EventDtoMapper {
 
         @Mapping(target = "id", ignore = true)
         @Mapping(target = "category", source = "category")
+        @Mapping(target = "publishedOn", ignore = true)
         Event newEventDtoToEntity(NewEventDto newEventDto,
                                   User initiator,
                                   Category category,

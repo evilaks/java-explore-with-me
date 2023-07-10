@@ -41,4 +41,8 @@ public interface EventService {
     EventFullDto updateEventByUser(UpdateEventRequest event, Long userId, Long eventId);
 
     EventFullDto updateEventByAdmin(UpdateEventRequest event, Long eventId);
+
+    List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events);
+
+    EventFullDto addViewsAndConfirmedRequests(EventFullDto event);
 }

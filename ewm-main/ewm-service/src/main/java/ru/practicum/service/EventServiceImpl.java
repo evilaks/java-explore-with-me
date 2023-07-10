@@ -21,6 +21,7 @@ import ru.practicum.repo.ParticipationRequestRepo;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -218,8 +219,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventByUserAndId(Long userId, Long eventId) {
-        return eventDtoMapper.toDto(eventRepo.findByIdAndInitiatorId(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Not found", "Event not found")));
+        return addViewsAndConfirmedRequests(eventDtoMapper.toDto(eventRepo.findByIdAndInitiatorId(eventId, userId)
+                .orElseThrow(() -> new NotFoundException("Not found", "Event not found"))));
     }
 
     @Override
@@ -391,7 +392,8 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events) {
+    @Override
+    public List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events) {
         List<String> eventUris = events.stream()
                 .map(eventFullDto -> ("/events/" + eventFullDto.getId()))
                 .collect(Collectors.toList());
@@ -411,6 +413,18 @@ public class EventServiceImpl implements EventService {
         }
 
         return events;
+    }
+
+    @Override
+    public EventFullDto addViewsAndConfirmedRequests(EventFullDto event) {
+        String uri = "/events/" + event.getId();
+        Long views = statsClient.getStats(LocalDateTime.now().minusYears(100),
+                LocalDateTime.now(), Collections.singletonList(uri), true).get(0).getHits();
+        event.setViews(views);
+        Long confirmedRequests = partRequestRepo.countParticipationRequestsByEventAndStatus(
+                eventDtoMapper.toEntity(event), RequestStatus.CONFIRMED);
+        event.setConfirmedRequests(confirmedRequests);
+        return event;
     }
 
 }
