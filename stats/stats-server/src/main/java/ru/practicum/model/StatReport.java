@@ -1,8 +1,10 @@
 package ru.practicum.model;
 
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 public class StatReport {
 
         private String app;
@@ -11,9 +13,4 @@ public class StatReport {
 
         private Long hits;
 
-        public StatReport(String app, String uri, Long hits) {
-            this.app = app;
-            this.uri = uri;
-            this.hits = hits;
-        }
 }

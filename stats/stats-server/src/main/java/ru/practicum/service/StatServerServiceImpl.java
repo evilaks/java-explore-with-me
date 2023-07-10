@@ -6,11 +6,13 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.StatEventDtoMapper;
 import ru.practicum.dto.StatisticsEventDto;
 import ru.practicum.dto.StatisticsReportDto;
+import ru.practicum.exception.BadRequestException;
 import ru.practicum.model.StatEvent;
 import ru.practicum.repo.StatServerRepo;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -37,7 +39,7 @@ public class StatServerServiceImpl implements StatServerService {
             LocalDateTime endDate = LocalDateTime.parse(end, formatter);
 
             if (!this.isValidDates(startDate, endDate)) {
-                throw new IllegalArgumentException("End date must be after start date");
+                throw new BadRequestException("Wrong dates in request", "End date must be after start date");
             }
 
             if (unique && uris.contains("ALL")) {
@@ -50,8 +52,8 @@ public class StatServerServiceImpl implements StatServerService {
                 return repository.countEventsByDatesAndUris(startDate, endDate, uris);
             }
 
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid date format");
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("Wrong request", "Invalid date format");
         }
     }
 

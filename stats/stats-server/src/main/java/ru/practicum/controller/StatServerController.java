@@ -26,10 +26,10 @@ public class StatServerController {
 
 
     @GetMapping("/stats")
-    public ResponseEntity<List<StatisticsReportDto>> getStatistics(@RequestParam (defaultValue = "1900-01-01 00:00:01") String start,
-                                                                  @RequestParam (defaultValue = "2099-12-31 23:59:59") String end,
-                                                                  @RequestParam (defaultValue = "ALL") List<String> uris,
-                                                                  @RequestParam (defaultValue = "false") Boolean unique) {
+    public ResponseEntity<List<StatisticsReportDto>> getStatistics(@RequestParam String start,
+                                                                   @RequestParam String end,
+                                                                   @RequestParam (defaultValue = "ALL") List<String> uris,
+                                                                   @RequestParam (defaultValue = "false") Boolean unique) {
         log.info("Getting statistics for period {} - {}, uris: {}, unique: {}", start, end, uris, unique);
         return ResponseEntity.ok().body(service.getStatistics(start, end, uris, unique));
     }
