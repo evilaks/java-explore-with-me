@@ -136,6 +136,7 @@ public class EventServiceImpl implements EventService {
 
         int page = from > 0 ? from / size : 0;
 
+        // todo onlyAvailable
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -159,7 +160,6 @@ public class EventServiceImpl implements EventService {
                             paid,
                             start,
                             end,
-                            // todo onlyAvailable,
                             PageRequest.of(page, size, Sort.by("eventDate").descending()));
                     break;
                 case "VIEWS":
@@ -168,7 +168,6 @@ public class EventServiceImpl implements EventService {
                             paid,
                             start,
                             end,
-                            // todo onlyAvailable,
                             PageRequest.of(page, size));
                     break;
                 default:
@@ -177,7 +176,6 @@ public class EventServiceImpl implements EventService {
                             paid,
                             start,
                             end,
-                            // todo onlyAvailable,
                             PageRequest.of(page, size, Sort.by("id").descending()));
             }
 
