@@ -26,4 +26,6 @@ public interface EventDtoMapper {
                                   LocalDateTime createdOn,
                                   State state);
 
+        EventShortDto fullDtoToShortDto(EventFullDto event);
+
 }
