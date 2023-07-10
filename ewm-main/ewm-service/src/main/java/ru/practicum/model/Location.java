@@ -1,12 +1,16 @@
 package ru.practicum.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "locations")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,13 +18,5 @@ public class Location {
 
     private Float lon;
     private Float lat;
-
-    public Location(Float lon, Float lat) {
-        this.lon = lon;
-        this.lat = lat;
-    }
-
-    public Location() {
-    }
 
 }

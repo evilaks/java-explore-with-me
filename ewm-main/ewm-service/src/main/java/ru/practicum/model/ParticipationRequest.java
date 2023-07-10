@@ -1,6 +1,8 @@
 package ru.practicum.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import ru.practicum.dto.request.RequestStatus;
 
 import javax.persistence.*;
@@ -8,7 +10,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "participation_requests")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 public class ParticipationRequest {
 
     @Id
