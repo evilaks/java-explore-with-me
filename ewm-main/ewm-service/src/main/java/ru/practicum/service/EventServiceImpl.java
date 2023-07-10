@@ -6,25 +6,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.client.StatsClient;
-import ru.practicum.dto.StatisticsReportDto;
 import ru.practicum.dto.event.*;
-import ru.practicum.dto.request.RequestStatus;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictRequestException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.model.*;
-import ru.practicum.repo.EventRepo;
-import ru.practicum.repo.LocationRepo;
-import ru.practicum.repo.ParticipationRequestRepo;
+import ru.practicum.repo.*;
+import ru.practicum.util.EventEnhancer;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,13 +28,12 @@ import java.util.stream.Collectors;
 public class EventServiceImpl implements EventService {
 
     private final EventRepo eventRepo;
-    private final UserService userService;
-    private final CategoryService categoryService;
+    private final CategoryRepo categoryRepo;
+    private final UserRepo userRepo;
     private final LocationRepo locationRepo;
     private final EventDtoMapper eventDtoMapper;
     private final LocationDtoMapper locationDtoMapper;
-    private final StatsClient statsClient;
-    private final ParticipationRequestRepo partRequestRepo;
+    private final EventEnhancer eventEnhancer;
 
     @Override
     @Transactional
@@ -48,8 +41,12 @@ public class EventServiceImpl implements EventService {
 
         validateNewEvent(newEventDto);
 
-        User initiator = userService.getUserById(userId); // throws NotFoundException
-        Category category = categoryService.getCategoryById(newEventDto.getCategory()); // throws NotFoundException
+        User initiator = userRepo.findById(userId).orElseThrow(() -> new NotFoundException("User not found",
+                "User with id " + userId + " not found")); // throws NotFoundException
+
+        Category category = categoryRepo.findById(newEventDto.getCategory())
+                .orElseThrow(() -> new NotFoundException("Category not found",
+                        "Category with id " + newEventDto.getCategory() + " not found")); // throws NotFoundException
 
         Location location = locationDtoMapper.toEntity(newEventDto.getLocation());
         Location savedLocation = locationRepo.save(location);
@@ -84,7 +81,10 @@ public class EventServiceImpl implements EventService {
         int page = from > 0 ? from / size : 0;
 
         List<Event> events = eventRepo.findByInitiatorId(userId, PageRequest.of(page, size));
-        return addViewsAndConfirmedRequests(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
+        return eventEnhancer.addViewsAndConfirmedRequests(events
+                .stream()
+                .map(eventDtoMapper::toDto)
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -115,7 +115,10 @@ public class EventServiceImpl implements EventService {
                     end,
                     PageRequest.of(page, size));
 
-            return addViewsAndConfirmedRequests(events.stream().map(eventDtoMapper::toDto).collect(Collectors.toList()));
+            return eventEnhancer.addViewsAndConfirmedRequests(events
+                    .stream()
+                    .map(eventDtoMapper::toDto)
+                    .collect(Collectors.toList()));
 
         } catch (DateTimeParseException e) {
             throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
@@ -181,16 +184,18 @@ public class EventServiceImpl implements EventService {
 
 
 
-            List<EventFullDto> result = addViewsAndConfirmedRequests(events.stream()
+            List<EventFullDto> result = eventEnhancer.addViewsAndConfirmedRequests(events
+                    .stream()
                     .map(eventDtoMapper::toDto)
                     .collect(Collectors.toList()));
 
             if (sort.equals("VIEWS")) {
-                return addViewsAndConfirmedRequests(result.stream()
+                return eventEnhancer.addViewsAndConfirmedRequests(result
+                        .stream()
                         .sorted(Comparator.comparing(EventFullDto::getViews).reversed())
                         .collect(Collectors.toList()));
             } else {
-                return addViewsAndConfirmedRequests(result);
+                return eventEnhancer.addViewsAndConfirmedRequests(result);
             }
 
         } catch (DateTimeParseException e) {
@@ -205,19 +210,12 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
 
 
-        return addViewsAndConfirmedRequests(List.of(event)).get(0);
-    }
-
-    @Override
-    public Event getEventById(Long eventId) {
-
-        return eventRepo.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
+        return eventEnhancer.addViewsAndConfirmedRequests(List.of(event)).get(0);
     }
 
     @Override
     public EventFullDto getEventByUserAndId(Long userId, Long eventId) {
-        return addViewsAndConfirmedRequests(eventDtoMapper.toDto(eventRepo.findByIdAndInitiatorId(eventId, userId)
+        return eventEnhancer.addViewsAndConfirmedRequests(eventDtoMapper.toDto(eventRepo.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"))));
     }
 
@@ -364,7 +362,8 @@ public class EventServiceImpl implements EventService {
             event.setAnnotation(eventRequest.getAnnotation());
         }
         if (eventRequest.getCategory() != null) {
-            event.setCategory(categoryService.getCategoryById(eventRequest.getCategory()));
+            event.setCategory(categoryRepo.findById(eventRequest.getCategory()).orElseThrow(() ->
+                    new BadRequestException("Invalid request", "Category from request not found")));
         }
         if (eventRequest.getDescription() != null) {
             event.setDescription(eventRequest.getDescription());
@@ -387,48 +386,6 @@ public class EventServiceImpl implements EventService {
         if (eventRequest.getTitle() != null) {
             event.setTitle(eventRequest.getTitle());
         }
-    }
-
-    @Override
-    public List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events) {
-        List<String> eventUris = events.stream()
-                .map(eventFullDto -> ("/events/" + eventFullDto.getId()))
-                .collect(Collectors.toList());
-
-        List<StatisticsReportDto> stats = statsClient.getStats(LocalDateTime.now().minusYears(100),
-                LocalDateTime.now(), eventUris, true);
-
-        Map<String, Long> uriToHitsMap = stats.stream()
-                .collect(Collectors.toMap(StatisticsReportDto::getUri, StatisticsReportDto::getHits));
-
-        for (EventFullDto event : events) {
-            String uri = "/events/" + event.getId();
-            event.setViews(uriToHitsMap.getOrDefault(uri, 0L));
-            Long confirmedRequests = partRequestRepo.countParticipationRequestsByEventAndStatus(
-                    eventDtoMapper.toEntity(event), RequestStatus.CONFIRMED);
-            event.setConfirmedRequests(confirmedRequests);
-        }
-
-        return events;
-    }
-
-    @Override
-    public EventFullDto addViewsAndConfirmedRequests(EventFullDto event) {
-        String uri = "/events/" + event.getId();
-
-        List<StatisticsReportDto> statReport = statsClient.getStats(LocalDateTime.now().minusYears(100),
-                LocalDateTime.now(), Collections.singletonList(uri), true);
-        if (statReport.isEmpty()) {
-            event.setViews(0L);
-        } else {
-            event.setViews(statReport.get(0).getHits());
-        }
-
-        Long confirmedRequests = partRequestRepo.countParticipationRequestsByEventAndStatus(
-                eventDtoMapper.toEntity(event), RequestStatus.CONFIRMED);
-        event.setConfirmedRequests(confirmedRequests);
-
-        return event;
     }
 
 }

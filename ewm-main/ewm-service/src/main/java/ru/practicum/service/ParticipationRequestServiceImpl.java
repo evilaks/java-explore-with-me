@@ -10,7 +10,9 @@ import ru.practicum.model.Event;
 import ru.practicum.model.ParticipationRequest;
 import ru.practicum.model.State;
 import ru.practicum.model.User;
+import ru.practicum.repo.EventRepo;
 import ru.practicum.repo.ParticipationRequestRepo;
+import ru.practicum.repo.UserRepo;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,16 +27,18 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     private final ParticipationRequestRepo partRequestRepo;
     private final ParticipationRequestDtoMapper partRequestDtoMapper;
 
-    private final UserService userService;
-    private final EventService eventService;
+    private final UserRepo userRepo;
+    private final EventRepo eventRepo;
 
     @Transactional
     @Override
     public ParticipationRequestDto createParticipationRequest(Long userId, Long eventId) {
 
         // throws 404 if user or event not found
-        User requester = userService.getUserById(userId);
-        Event event = eventService.getEventById(eventId);
+        User requester = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("User not found", "User with id " + userId + " not found"));
+        Event event = eventRepo.findById(eventId).orElseThrow(
+                () -> new NotFoundException("Event not found", "Event with id " + eventId + " not found"));
 
         validateParticipationRequest(requester, event);
 
@@ -58,7 +62,8 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
 
         // throws 404 if user or event not found
-        User requester = userService.getUserById(userId);
+        User requester = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("User not found", "User with id " + userId + " not found"));
         ParticipationRequest request = partRequestRepo.findById(requestId).orElseThrow(
                 () -> new NotFoundException("Request not found", "Request with id " + requestId + " not found")
         );
@@ -75,7 +80,8 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     @Override
     public List<ParticipationRequestDto> getParticipationRequestsByUserId(Long userId) {
         // throws 404 if user or event not found
-        User requester = userService.getUserById(userId);
+        User requester = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("User not found", "User with id " + userId + " not found"));
 
         return partRequestRepo.findAllByRequesterId(requester.getId())
                 .stream()
@@ -86,8 +92,10 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
     @Override
     public List<ParticipationRequestDto> getParticipationRequestsByEventId(Long userId, Long eventId) {
 
-        User initiator = userService.getUserById(userId);
-        Event event = eventService.getEventById(eventId);
+        User initiator = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("User not found", "User with id " + userId + " not found"));
+        Event event = eventRepo.findById(eventId).orElseThrow(
+                () -> new NotFoundException("Event not found", "Event with id " + eventId + " not found"));
 
         if (!event.getInitiator().getId().equals(initiator.getId())) {
             throw new ConflictRequestException("Request conflict", "User can't get requests for other user's event");
@@ -105,8 +113,10 @@ public class ParticipationRequestServiceImpl implements ParticipationRequestServ
                                                          Long eventId,
                                                          EventRequestsStatusUpdateRequest request) {
 
-        User initiator = userService.getUserById(userId);
-        Event event = eventService.getEventById(eventId);
+        User initiator = userRepo.findById(userId).orElseThrow(
+                () -> new NotFoundException("User not found", "User with id " + userId + " not found"));
+        Event event = eventRepo.findById(eventId).orElseThrow(
+                () -> new NotFoundException("Event not found", "Event with id " + eventId + " not found"));
 
         if (!event.getInitiator().getId().equals(initiator.getId())) {
             throw new ConflictRequestException("Request conflict", "User can't update requests for other user's event");

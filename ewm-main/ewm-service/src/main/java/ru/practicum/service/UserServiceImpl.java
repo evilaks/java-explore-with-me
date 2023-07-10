@@ -7,7 +7,6 @@ import ru.practicum.dto.user.UserDto;
 import ru.practicum.dto.user.UserDtoMapper;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.model.User;
 import ru.practicum.repo.UserRepo;
 
 import java.util.List;
@@ -56,12 +55,6 @@ public class UserServiceImpl implements UserService {
             throw new NotFoundException("User not found", "User with id " + id + " not found");
 
         userRepo.deleteById(id);
-    }
-
-    @Override
-    public User getUserById(Long userId) {
-        return userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found", "User with id " + userId + " not found"));
     }
 
     private void validateUser(UserDto user) {

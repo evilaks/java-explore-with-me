@@ -7,7 +7,6 @@ import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.CategoryDtoMapper;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.model.Category;
 import ru.practicum.repo.CategoryRepo;
 
 import java.util.List;
@@ -66,12 +65,6 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepo.findAll(PageRequest.of(page, size)).stream()
                 .map(categoryDtoMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Category getCategoryById(Long categoryId) {
-        return categoryRepo.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("Category not found", "Category with id " + categoryId + " not found"));
     }
 
     private void validateCategory(CategoryDto categoryDto) {

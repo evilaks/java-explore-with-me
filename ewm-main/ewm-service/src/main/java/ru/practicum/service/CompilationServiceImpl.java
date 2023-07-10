@@ -16,6 +16,7 @@ import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
 import ru.practicum.repo.CompilationRepo;
 import ru.practicum.repo.EventRepo;
+import ru.practicum.util.EventEnhancer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationDtoMapper compilationDtoMapper;
     private final EventRepo eventRepo;
     private final EventDtoMapper eventDtoMapper;
-    private final EventService eventService;
+    private final EventEnhancer eventEnhancer;
 
     @Override
     public List<CompilationDtoToShow> getCompilations(Boolean pinned, Integer from, Integer size) {
@@ -42,7 +43,7 @@ public class CompilationServiceImpl implements CompilationService {
             return compilationRepo.findAllByPinned(pinned, PageRequest.of(page, size))
                     .stream()
                     .map(compilation -> compilationDtoMapper.toDto(compilation,
-                            eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                            eventEnhancer.addViewsAndConfirmedRequests(compilation.getEvents()
                                             .stream()
                                             .map(eventDtoMapper::toDto)
                                             .collect(Collectors.toList()))
@@ -54,7 +55,7 @@ public class CompilationServiceImpl implements CompilationService {
             return compilationRepo.findAll(PageRequest.of(page, size))
                     .stream()
                     .map(compilation -> compilationDtoMapper.toDto(compilation,
-                            eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                            eventEnhancer.addViewsAndConfirmedRequests(compilation.getEvents()
                                     .stream()
                                     .map(eventDtoMapper::toDto)
                                     .collect(Collectors.toList()))
@@ -71,7 +72,7 @@ public class CompilationServiceImpl implements CompilationService {
 
         return compilationRepo.findById(id)
                 .map(compilation -> compilationDtoMapper.toDto(compilation,
-                        eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                        eventEnhancer.addViewsAndConfirmedRequests(compilation.getEvents()
                                 .stream()
                                 .map(eventDtoMapper::toDto)
                                 .collect(Collectors.toList()))
@@ -146,7 +147,7 @@ public class CompilationServiceImpl implements CompilationService {
         compilationRepo.save(compilation);
 
         return compilationDtoMapper.toDto(compilation,
-                eventService.addViewsAndConfirmedRequests(compilation.getEvents()
+                eventEnhancer.addViewsAndConfirmedRequests(compilation.getEvents()
                                 .stream()
                                 .map(eventDtoMapper::toDto)
                                 .collect(Collectors.toList()))

@@ -3,7 +3,6 @@ package ru.practicum.service;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
-import ru.practicum.model.Event;
 import ru.practicum.model.State;
 
 import java.util.List;
@@ -32,8 +31,6 @@ public interface EventService {
                                        int from,
                                        int size);
 
-    Event getEventById(Long eventId);
-
     EventFullDto getEventDtoById(Long eventId);
 
     EventFullDto getEventByUserAndId(Long userId, Long eventId);
@@ -42,7 +39,4 @@ public interface EventService {
 
     EventFullDto updateEventByAdmin(UpdateEventRequest event, Long eventId);
 
-    List<EventFullDto> addViewsAndConfirmedRequests(List<EventFullDto> events);
-
-    EventFullDto addViewsAndConfirmedRequests(EventFullDto event);
 }
