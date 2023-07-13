@@ -3,3 +3,6 @@
 
 Схема сервиса:
 ![ER-diagram](readme-files/er-diagram.png)
+
+## Ссылка для проверки
+https://github.com/evilaks/java-explore-with-me/pull/5
