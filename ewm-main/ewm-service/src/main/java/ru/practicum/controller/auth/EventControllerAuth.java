@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventWithModerationHistoryDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
 import ru.practicum.dto.request.EventRequestsStatusUpdateRequest;
@@ -76,4 +77,11 @@ public class EventControllerAuth {
         return new ResponseEntity<>(participationRequestService.updateRequests(userId, eventId, updateRequest), HttpStatus.OK);
     }
 
+    // GET /users/{userId}/events/{eventId}/moderation
+    @GetMapping(path = "/{eventId}/moderation")
+    public ResponseEntity<EventWithModerationHistoryDto> getEventWithModerationHistory(@PathVariable Long userId,
+                                                                                       @PathVariable Long eventId) {
+        log.info("Getting events for moderation for event {} from user {}", eventId, userId);
+        return new ResponseEntity<>(eventService.getEventWithModerationHistory(userId, eventId), HttpStatus.OK);
+    }
 }

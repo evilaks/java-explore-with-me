@@ -1,5 +1,8 @@
 DELETE FROM compilations_events;
 
+DELETE FROM moderation_events;
+ALTER TABLE compilations ALTER COLUMN id RESTART WITH 1;
+
 DELETE FROM compilations;
 ALTER TABLE compilations ALTER COLUMN id RESTART WITH 1;
 

@@ -16,4 +16,5 @@ public class UpdateEventRequest {
     private Boolean requestModeration;
     private StateAction stateAction;
     private String title;
+    private String moderationComment;
 }
