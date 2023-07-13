@@ -351,7 +351,7 @@ public class EventServiceImpl implements EventService {
             List<Event> events = eventRepo.findAllByStateAndEventDateBetween(State.PENDING,
                     start,
                     end,
-                    PageRequest.of(page, size, Sort.by("eventDate").descending()));
+                    PageRequest.of(page, size, Sort.by("id").descending()));
 
             return events.stream()
                     .map(event -> eventDtoMapper.toEventWithModerationHistoryDto(event, moderationEventRepo.findAllByEventId(event.getId())))
