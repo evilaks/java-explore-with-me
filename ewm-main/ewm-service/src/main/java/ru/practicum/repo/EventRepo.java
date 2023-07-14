@@ -44,4 +44,6 @@ public interface EventRepo extends JpaRepository<Event, Long> {
                                      Pageable pageable);
 
     Optional<Event> findByIdAndState(Long eventId, State state);
+
+    List<Event> findAllByStateAndEventDateBetween(State state, LocalDateTime start, LocalDateTime end, Pageable pageable);
 }

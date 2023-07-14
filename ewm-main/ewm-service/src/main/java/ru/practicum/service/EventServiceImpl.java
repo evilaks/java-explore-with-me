@@ -30,6 +30,7 @@ public class EventServiceImpl implements EventService {
     private final EventRepo eventRepo;
     private final CategoryRepo categoryRepo;
     private final UserRepo userRepo;
+    private final ModerationEventRepo moderationEventRepo;
     private final LocationRepo locationRepo;
     private final EventDtoMapper eventDtoMapper;
     private final LocationDtoMapper locationDtoMapper;
@@ -227,6 +228,13 @@ public class EventServiceImpl implements EventService {
 
         Event eventToUpdate = eventRepo.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Not found", "Event or user not found"));
+
+        ModerationEvent moderationEvent = new ModerationEvent();
+        moderationEvent.setEvent(eventToUpdate);
+        moderationEvent.setTimestamp(LocalDateTime.now());
+        moderationEvent.setComment(updateEventRequest.getModerationComment());
+        moderationEvent.setPreviousState(eventToUpdate.getState());
+
         if (eventToUpdate.getState() == State.PENDING || eventToUpdate.getState() == State.CANCELED) {
 
             // update event
@@ -245,6 +253,9 @@ public class EventServiceImpl implements EventService {
                 }
             }
 
+            moderationEvent.setNewState(eventToUpdate.getState());
+            moderationEventRepo.save(moderationEvent);
+
             return eventDtoMapper.toDto(eventRepo.save(eventToUpdate));
 
         } else {
@@ -261,6 +272,12 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Not found", "Event not found"));
 
         validateUpdateEvent(updateEventRequest);
+
+        ModerationEvent moderationEvent = new ModerationEvent();
+        moderationEvent.setEvent(eventToUpdate);
+        moderationEvent.setTimestamp(LocalDateTime.now());
+        moderationEvent.setComment(updateEventRequest.getModerationComment());
+        moderationEvent.setPreviousState(eventToUpdate.getState());
 
         updateEvent(eventToUpdate, updateEventRequest);
 
@@ -289,10 +306,59 @@ public class EventServiceImpl implements EventService {
                 throw new BadRequestException("Invalid event date", "Event date can't be in the past");
             }
 
+            moderationEvent.setNewState(eventToUpdate.getState());
+            moderationEventRepo.save(moderationEvent);
+
             return eventDtoMapper.toDto(eventRepo.save(eventToUpdate));
 
         } else {
             throw new ConflictRequestException("Invalid event state", "Event can't be updated");
+        }
+    }
+
+    @Override
+    public EventWithModerationHistoryDto getEventWithModerationHistory(Long userId, Long eventId) {
+        Event event = eventRepo.findByIdAndInitiatorId(eventId, userId)
+                .orElseThrow(() -> new NotFoundException("Not found", "Event or user not found"));
+
+        List<ModerationEvent> moderationEvents = moderationEventRepo.findAllByEventId(eventId);
+
+        return eventDtoMapper.toEventWithModerationHistoryDto(event, moderationEvents);
+    }
+
+    @Override
+    public List<EventWithModerationHistoryDto> getEventsWithModerationHistory(String rangeStart,
+                                                                              String rangeEnd,
+                                                                              int from,
+                                                                              int size) {
+
+        int page = from > 0 ? from / size : 0;
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            if (rangeStart == null) {
+                rangeStart = LocalDateTime.now().format(formatter);
+            }
+
+            LocalDateTime start = LocalDateTime.parse(rangeStart, formatter);
+            LocalDateTime end = LocalDateTime.parse(rangeEnd, formatter);
+
+            if (start.isAfter(end)) {
+                throw new BadRequestException("Invalid date range", "Start date can't be after end date");
+            }
+
+            List<Event> events = eventRepo.findAllByStateAndEventDateBetween(State.PENDING,
+                    start,
+                    end,
+                    PageRequest.of(page, size, Sort.by("id").descending()));
+
+            return events.stream()
+                    .map(event -> eventDtoMapper.toEventWithModerationHistoryDto(event, moderationEventRepo.findAllByEventId(event.getId())))
+                    .collect(Collectors.toList());
+
+        } catch (DateTimeParseException e) {
+            throw new BadRequestException("Invalid date format", "Date format should be yyyy-MM-dd HH:mm:ss");
         }
     }
 

@@ -1,6 +1,7 @@
 package ru.practicum.service;
 
 import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventWithModerationHistoryDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventRequest;
 import ru.practicum.model.State;
@@ -38,5 +39,12 @@ public interface EventService {
     EventFullDto updateEventByUser(UpdateEventRequest event, Long userId, Long eventId);
 
     EventFullDto updateEventByAdmin(UpdateEventRequest event, Long eventId);
+
+    EventWithModerationHistoryDto getEventWithModerationHistory(Long userId, Long eventId);
+
+    List<EventWithModerationHistoryDto> getEventsWithModerationHistory(String start,
+                                                                       String end,
+                                                                       int from,
+                                                                       int size);
 
 }
